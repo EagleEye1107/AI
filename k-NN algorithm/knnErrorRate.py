@@ -4,10 +4,8 @@
         Ahmed Rafik El-Mehdi BAAHMED || BR34CH-HUNT3R
 
 
-    The idea is to identify which of a set of categories (classes) points in a plan belongs to using k-NN Algorithm: 
-        1. Generate two classes of point (class 1 & class 2), each class represent a circle in a plane with a specific radius.
-        2. Generate the third class (class C) whose points are between the two previous classes.
-        3. Classify class C points with the k-NN algorithm.
+    The idea is to calculate the Mean Error Rates to find the optimal value of k. Based on the previous principle
+    in knnClassifier using two classes
     
     PS: In k-NN classification, the output is a class membership.
 
@@ -15,18 +13,23 @@
 
 import random
 from math import *
+import numpy as np
 from matplotlib import pyplot as plt
 
 class1 = []
 class2 = []
+classTest = []
 classC = []
 
 classCtoC1 = []
 classCtoC2 = []
 
 fig, axs = plt.subplots(2)
+figSubtitle = 'k-NN Error Rate'
+fig.suptitle(figSubtitle)
 
-def generateC1C2_C (R1, R2, class1, class2, classC, nbC1C2, nbC):
+
+def generateC1C2 (R1, R2, class1, class2, classTest, classC, nbC1C2):
     '''
     ---------------------------------------------------------------------------------
         R1 -> radius of class 1 circle
@@ -34,10 +37,8 @@ def generateC1C2_C (R1, R2, class1, class2, classC, nbC1C2, nbC):
     ---------------------------------------------------------------------------------
         class1 -> class 1 point list
         class2 -> class 2 point list
-        classC -> class C point list
     ---------------------------------------------------------------------------------
         nbC1C2 -> number of points to generate for each class (class 1 & class 2)
-        nbC -> number of points to generate for the uknown class (Class C)
     ---------------------------------------------------------------------------------
     '''
     for i in range (nbC1C2):
@@ -52,7 +53,6 @@ def generateC1C2_C (R1, R2, class1, class2, classC, nbC1C2, nbC):
         y1 = sin(ang1) * hyp1
         class1.append((x1,y1))
         axs[0].plot(x1,y1, marker="o", color="red")
-        axs[1].plot(x1,y1, marker="o", color="red")
 
         # -------------------------- class 2 ---------------------------------
         # polar notation
@@ -65,31 +65,29 @@ def generateC1C2_C (R1, R2, class1, class2, classC, nbC1C2, nbC):
         y2 = sin(ang2) * hyp2
         class2.append((x2,y2))
         axs[0].plot(x2,y2, marker="o", color="blue")
-        axs[1].plot(x2,y2, marker="o", color="blue")
+    
+    # Test Set 20%
+    for i in range((int(nbC1C2 * 0.2))):
+        pt = int(random.uniform(0, nbC1C2))
+        classTest.append(('C1', class1[pt]))
+        classC.append(class1[pt])
+        axs[0].plot(class1[pt][0],class1[pt][1], marker="o", color="orange")
 
-    for i in range(nbC):
-        # -------------------------- class C ---------------------------------
-        # polar notation
-        # angle of the point [0, 2*pi]
-        angC = random.uniform(0, 1) * 2 * pi
-        # the length of the hypotenuse [0, radius]
-        hypC = random.uniform(R1, R2)
+        classTest.append(('C2', class2[pt]))
+        classC.append(class2[pt])
+        axs[0].plot(class2[pt][0],class2[pt][1], marker="o", color="green")
 
-        xC = cos(angC) * hypC
-        yC = sin(angC) * hypC
-        classC.append((xC,yC))
-        axs[0].plot(xC,yC, marker="o", color="yellow")
+    classTest.sort(key = lambda x: x[0])
     plt.draw()
 
 
 def distance(pt1,pt2):
     return sqrt( (pt2[1]-pt1[1])**2 + (pt2[0]-pt1[0])**2 )
 
-
 def knnClassification (k, class1, class2, classC, classCtoC1, classCtoC2):
     if (k % 2 != 0):
-        figSubtitle = str(k)+'-NN Classifier'
-        fig.suptitle(figSubtitle)
+        classCtoC1.clear()
+        classCtoC2.clear()
         classCmin = []
         subClassCmin = []
         for pt in classC:
@@ -109,28 +107,59 @@ def knnClassification (k, class1, class2, classC, classCtoC1, classCtoC2):
                 for j in range(k):
                     somme = somme + classCmin[i+1][j][0]
                 if (somme >= 1):
-                    classCtoC1.append((classCmin[i][0],classCmin[i][1]))
-                    axs[1].plot(classCmin[i][0],classCmin[i][1], marker="o", color="orange")
+                    classCtoC1.append(('C1', (classCmin[i][0],classCmin[i][1])))
                 else:
-                    classCtoC2.append((classCmin[i][0],classCmin[i][1]))
-                    axs[1].plot(classCmin[i][0],classCmin[i][1], marker="o", color="green")
-        '''
-        print('------------------------------------------------------------------------------------')
-        print('classCtoC1 :\n', classCtoC1)
-        print()
-        print('classCtoC2 :\n', classCtoC2)
-        print()
-        print('classC points distances with the 2 other classes :\n', classCmin)
-        print('------------------------------------------------------------------------------------')
-        '''
+                    classCtoC2.append(('C2', (classCmin[i][0],classCmin[i][1])))
     else:
         print('ERROR : k must be ODD')
+
+
+def knnOptimalK (n, class1, class2, classTest, classC, classCtoC1, classCtoC2):
+    # maeList of all Mean Error calculated for each k value in range(n+1)
+    maeList = []
+    # graph coordinates
+    x = []
+    y = []
+
+    for k in range(3, n+1):
+        mae = 0
+        classAfterTest = []
+        if (k % 2 != 0):
+            knnClassification (k, class1, class2, classC, classCtoC1, classCtoC2)
+            for i in range(len(classCtoC1)):
+                classAfterTest.append(classCtoC1[i])
+            for i in range(len(classCtoC2)):
+                classAfterTest.append(classCtoC2[i])
+
+            # calculate MAE of the current k value
+            for pt in classAfterTest:
+                if pt not in classTest:
+                    mae = mae + 1
+            
+            # insert each MEA with its k in the meaList
+            maeList.append((k,mae))
+    
+    # create x-axis and y-axis of the graph
+    for i in range(len(maeList)):
+        x.append(maeList[i][0])
+        y.append(maeList[i][1])
+
+    plt.plot(x, y, 'o:b')
+    plt.xlabel('K - axis')
+    plt.xticks(np.arange(np.array(x).min(), np.array(x).max()+1, 2))
+    plt.ylabel('MAE - axis')
+    plt.yticks(np.arange(np.array(y).min(), np.array(y).max()+1, 1))
     plt.draw()
+
+    # sort the Mean Error list to get the best value of k (for the min MAE)
+    maeList.sort(key = lambda x: x[1])
+    return maeList[0][0]
 
 
 if __name__ == '__main__':
-    generateC1C2_C(10, 20, class1, class2, classC, 100, 20)
-    knnClassification(5, class1, class2, classC, classCtoC1, classCtoC2)
+    generateC1C2(15, 17, class1, class2, classTest, classC, 100)
+    k = knnOptimalK(21, class1, class2, classTest, classC, classCtoC1, classCtoC2)
+    print("the ideal k is : ", k)
     plt.show()
 
 
@@ -138,7 +167,6 @@ if __name__ == '__main__':
         Graph:
             red points : class1
             blue points : class2
-            yellow points : unknown class points
-            orange points : from unknown -> classe1
-            green points : from unknown -> classe2
+            orange points : Test set of classe1
+            green points : Test set of classe2
 '''
