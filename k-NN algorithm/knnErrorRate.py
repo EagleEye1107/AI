@@ -24,7 +24,7 @@ classC = []
 classCtoC1 = []
 classCtoC2 = []
 
-fig, axs = plt.subplots(2)
+fig, axs = plt.subplots(2,figsize=(15,15))
 figSubtitle = 'k-NN Error Rate'
 fig.suptitle(figSubtitle)
 
@@ -136,6 +136,7 @@ def knnOptimalK (n, class1, class2, classTest, classC, classCtoC1, classCtoC2):
                 if pt not in classTest:
                     mae = mae + 1
             
+            mae = mae / len(classTest)
             # insert each MEA with its k in the meaList
             maeList.append((k,mae))
     
@@ -148,7 +149,7 @@ def knnOptimalK (n, class1, class2, classTest, classC, classCtoC1, classCtoC2):
     plt.xlabel('K - axis')
     plt.xticks(np.arange(np.array(x).min(), np.array(x).max()+1, 2))
     plt.ylabel('MAE - axis')
-    plt.yticks(np.arange(np.array(y).min(), np.array(y).max()+1, 1))
+    plt.yticks(np.arange(np.array(y).min(), np.array(y).max()+0.01, 0.02))
     plt.draw()
 
     # sort the Mean Error list to get the best value of k (for the min MAE)
@@ -158,7 +159,7 @@ def knnOptimalK (n, class1, class2, classTest, classC, classCtoC1, classCtoC2):
 
 if __name__ == '__main__':
     generateC1C2(15, 17, class1, class2, classTest, classC, 100)
-    k = knnOptimalK(21, class1, class2, classTest, classC, classCtoC1, classCtoC2)
+    k = knnOptimalK(51, class1, class2, classTest, classC, classCtoC1, classCtoC2)
     print("the ideal k is : ", k)
     plt.show()
 
